@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+
 import type { Bird, Detection } from '@/lib/database.types'
 
 import { useI18n } from '@/lib/i18n'
@@ -32,6 +34,8 @@ export default function BirdCard({ bird }: { bird: BirdWithSummary }) {
 
   const maxCount = Math.max(...(bird.hourlyCounts || []), 1)
 
+  const [imageLoaded, setImageLoaded] = useState(false)
+
   return (
     <article
       className="bird-card"
@@ -43,10 +47,21 @@ export default function BirdCard({ bird }: { bird: BirdWithSummary }) {
       id={`bird-card-${bird.id}`}
     >
       <div className="bird-card-image">
-        {bird.image_url ? (
-          <img src={`/fotos_pajaros/${bird.image_url}`} alt={displayName} loading="lazy" />
-        ) : (
-          <div className="bird-card-image-placeholder">🐦</div>
+        {/* Placeholder logo shown while loading or if no image */}
+        {(!bird.image_url || !imageLoaded) && (
+          <div className="bird-card-image-placeholder">
+            <img src="/logo.svg" alt="placeholder" className="placeholder-logo" />
+          </div>
+        )}
+        
+        {bird.image_url && (
+          <img 
+            src={`/fotos_pajaros/${bird.image_url}`} 
+            alt={displayName} 
+            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
+            style={{ opacity: imageLoaded ? 1 : 0 }}
+          />
         )}
         <div className="bird-card-badge">
           {bird.detectionCount} ×

@@ -76,6 +76,7 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
   const [selectedLocation, setSelectedLocation] = useState<number | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [isZoomed, setIsZoomed] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -199,15 +200,21 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
           {/* Hero */}
           <div className="bird-hero">
             <div className="bird-hero-image">
-              {bird?.image_url ? (
+              {/* Placeholder logo shown while loading or if no image */}
+              {(!bird?.image_url || !imageLoaded) && (
+                <div className="bird-hero-placeholder">
+                  <img src="/logo.svg" alt="placeholder" className="placeholder-logo" />
+                </div>
+              )}
+
+              {bird?.image_url && (
                 <img 
                   src={`/fotos_pajaros/${bird.image_url}`} 
                   alt={displayName} 
-                  style={{ cursor: 'zoom-in' }}
+                  style={{ cursor: 'zoom-in', opacity: imageLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
                   onClick={() => setIsZoomed(true)}
+                  onLoad={() => setImageLoaded(true)}
                 />
-              ) : (
-                <div className="bird-hero-placeholder">🐦</div>
               )}
             </div>
 

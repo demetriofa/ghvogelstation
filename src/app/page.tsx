@@ -258,7 +258,7 @@ export default function HomePage() {
         <div className="container">
           {/* Header */}
           <div className="page-header">
-            <h1>🐦 {t('nav.home')}</h1>
+            <h1>{t('nav.home')}</h1>
             <div className="page-subtitle" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
               {tab !== 'all' && (
                 <button onClick={() => handleShift(-1)} className="shift-btn" aria-label="Previous">

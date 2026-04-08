@@ -497,7 +497,7 @@ img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: transform var(--transition-slow);
+  transition: transform var(--transition-slow), opacity 0.4s ease;
 }
 
 .bird-card:hover .bird-card-image img {
@@ -510,8 +510,19 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 4rem;
   background: linear-gradient(135deg, var(--bg-surface), var(--bg-card));
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.placeholder-logo {
+  width: 40%;
+  height: 40%;
+  object-fit: contain;
+  opacity: 0.15;
+  filter: grayscale(1);
 }
 
 .bird-card-badge {
@@ -719,6 +730,8 @@ img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  position: relative;
+  z-index: 2;
 }
 
 .bird-hero-placeholder {
@@ -727,7 +740,17 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  background: var(--bg-card);
+}
+
+.bird-hero-placeholder .placeholder-logo {
+  width: 30%;
+  height: 30%;
+  opacity: 0.1;
 }
 
 .bird-hero-info {
