@@ -176,6 +176,15 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('birdweb-lang') as Language | null
     if (saved && ['en', 'de', 'es'].includes(saved)) {
       setLangState(saved)
+    } else if (typeof navigator !== 'undefined' && navigator.language) {
+      const browserLang = navigator.language.toLowerCase()
+      if (browserLang.startsWith('de')) {
+        setLangState('de')
+      } else if (browserLang.startsWith('es')) {
+        setLangState('es')
+      } else {
+        setLangState('en') // default to English
+      }
     }
   }, [])
 
