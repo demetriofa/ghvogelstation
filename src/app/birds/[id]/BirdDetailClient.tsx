@@ -257,9 +257,11 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
                 )}
               </div>
 
-              {bird?.wikipedia_url && (
+              {(bird?.wikipedia_url || bird?.scientific_name) && (
                 <a
-                  href={bird.wikipedia_url}
+                  href={bird?.scientific_name 
+                    ? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(bird.scientific_name.replace(/ /g, '_'))}` 
+                    : bird?.wikipedia_url || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="wiki-link"
