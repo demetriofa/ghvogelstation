@@ -6,25 +6,73 @@ import type { Bird, DetectionWithBird } from '@/lib/database.types'
 import { useI18n } from '@/lib/i18n'
 import Link from 'next/link'
 import DetectionTimeline from '@/components/DetectionTimeline'
-import Navbar from '@/components/Navbar'
-import ConfidenceBar from '@/components/ConfidenceBar'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Area, AreaChart,
-} from 'recharts'
+import Navbar, { type Tab, type CustomRange } from '@/components/Navbar'
+
+function isoWeekToDates(isoWeek: string): { from: string; to: string } {
+  const [yearStr, weekStr] = isoWeek.split('-W')
+  const year = Number(yearStr)
+  const week = Number(weekStr)
+  const jan4 = new Date(year, 0, 4)
+  const startOfWeek1 = new Date(jan4)
+  startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7))
+  const monday = new Date(startOfWeek1)
+  monday.setDate(startOfWeek1.getDate() + (week - 1) * 7)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  return { from: fmt(monday), to: fmt(sunday) }
+}
+
+function getDateRange(
+  tab: Tab,
+  customRange: CustomRange | null
+): { from: string; to: string } | null {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+
+  if (tab === 'today') return { from: today, to: today }
+
+  if (tab === 'week') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - 6)
+    return { from: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, to: today }
+  }
+
+  if (tab === 'month') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - 29)
+    return { from: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, to: today }
+  }
+
+  if (tab === 'custom' && customRange) {
+    if (customRange.mode === 'day') return { from: customRange.value, to: customRange.value }
+    if (customRange.mode === 'week') return isoWeekToDates(customRange.value)
+    if (customRange.mode === 'month') {
+      const [y, m] = customRange.value.split('-').map(Number)
+      const first = `${y}-${pad(m)}-01`
+      const last = new Date(y, m, 0)
+      return {
+        from: first,
+        to: `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}`,
+      }
+    }
+  }
+
+  return null
+}
 
 interface BirdDetailClientProps {
   birdId: number
 }
-
-type Tab = 'all' | 'week' | 'month'
 
 export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
   const { lang, t } = useI18n()
   const [bird, setBird] = useState<Bird | null>(null)
   const [detections, setDetections] = useState<DetectionWithBird[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<Tab>('all')
+  const [tab, setTab] = useState<Tab>('today')
+  const [customRange, setCustomRange] = useState<CustomRange | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<number | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [isZoomed, setIsZoomed] = useState(false)
@@ -46,18 +94,7 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
   const fetchDetections = useCallback(async () => {
     setLoading(true)
     try {
-      const pad = (n: number) => String(n).padStart(2, '0')
-      const now = new Date()
-      const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
-
-      let from: string | null = null
-      if (tab === 'week') {
-        const d = new Date(now); d.setDate(d.getDate() - 6)
-        from = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-      } else if (tab === 'month') {
-        const d = new Date(now); d.setDate(d.getDate() - 29)
-        from = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-      }
+      const range = getDateRange(tab, customRange)
 
       let allDetections: DetectionWithBird[] = []
       let fromIdx = 0
@@ -76,7 +113,7 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
           .order('date', { ascending: false })
           .order('time', { ascending: false })
 
-        if (from) query = query.gte('date', from).lte('date', today)
+        if (range) query = query.gte('date', range.from).lte('date', range.to)
         if (selectedLocation !== null) query = query.eq('location_id', selectedLocation)
 
         const { data, error } = await query.range(fromIdx, fromIdx + step - 1)
@@ -99,7 +136,7 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
     } finally {
       setLoading(false)
     }
-  }, [birdId, tab, selectedLocation])
+  }, [birdId, tab, customRange, selectedLocation])
 
   useEffect(() => { fetchBird() }, [fetchBird])
   useEffect(() => { fetchDetections() }, [fetchDetections])
@@ -122,16 +159,15 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
 
   const displayName = commonName ?? bird?.scientific_name ?? '…'
 
-  // Build chart data: confidence over last 30 detections
-  const chartData = [...detections]
-    .reverse()
-    .slice(-30)
-    .map((d, i) => ({
-      i: i + 1,
-      label: `${d.date} ${d.time.slice(0, 5)}`,
-      confidence: d.confidence != null ? Math.round(d.confidence * 100) : null,
-    }))
-    .filter((d) => d.confidence != null)
+  // Build hourly detections histogram
+  const hourlyCounts = new Array(24).fill(0)
+  detections.forEach(d => {
+    if (d.time) {
+      const hour = parseInt(d.time.split(':')[0])
+      if (!isNaN(hour)) hourlyCounts[hour]++
+    }
+  })
+  const maxCount = Math.max(...hourlyCounts, 1)
 
   const avgConf =
     detections.length > 0
@@ -142,17 +178,15 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
         )
       : 0
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'week', label: t('tab.week') },
-    { key: 'month', label: t('tab.month') },
-    { key: 'all', label: t('tab.all') },
-  ]
-
   return (
     <div className="page-wrapper">
       <Navbar
         selectedLocation={selectedLocation}
         onLocationChange={setSelectedLocation}
+        selectedTab={tab}
+        onTabChange={setTab}
+        customRange={customRange}
+        onCustomRangeChange={setCustomRange}
       />
 
       <main className="main-content">
@@ -237,43 +271,34 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
             </div>
           </div>
 
-          {/* Confidence chart */}
-          {chartData.length > 1 && (
-            <div className="chart-container">
-              <p className="chart-title">{t('chart.confidence_over_time')}</p>
-              <ResponsiveContainer width="100%" height={160}>
-                <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="confGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="i" tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#161d2a',
-                      border: '1px solid rgba(255,255,255,0.07)',
-                      borderRadius: '8px',
-                      fontSize: '0.75rem',
-                      color: '#f1f5f9',
-                    }}
-                    formatter={(v: unknown) => [`${v}%`, t('bird.confidence')]}
-                    labelFormatter={(i) => chartData[i - 1]?.label ?? ''}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="confidence"
-                    stroke="#22c55e"
-                    strokeWidth={2}
-                    fill="url(#confGrad)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: '#22c55e' }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+          {/* Hourly detections histogram */}
+          {detections.length > 0 && (
+            <div className="chart-container" style={{ margin: '2.5rem 0', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border)' }}>
+              <p className="chart-title" style={{ marginBottom: '1rem', fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {t('bird.detections')} / 24h
+              </p>
+              <div className="bird-histogram-container">
+                <div className="bird-histogram" style={{ height: '120px' }}>
+                  {hourlyCounts.map((count, i) => {
+                    const heightPct = (count / maxCount) * 100
+                    return (
+                      <div 
+                        key={i} 
+                        className={`bird-histogram-bar ${count > 0 ? 'has-data' : ''}`}
+                        style={{ height: count > 0 ? `${Math.max(heightPct, 15)}%` : '2px', borderTopLeftRadius: '4px', borderTopRightRadius: '4px', margin: '0 1px' }}
+                        title={`${i}:00 - ${count} detections`}
+                      />
+                    )
+                  })}
+                </div>
+                <div className="bird-histogram-labels" style={{ marginTop: '10px', fontSize: '0.85rem' }}>
+                  <span>0:00</span>
+                  <span>6:00</span>
+                  <span>12:00</span>
+                  <span>18:00</span>
+                  <span>24:00</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -281,20 +306,6 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
           <div className="toolbar" style={{ marginBottom: '1rem' }}>
             <div className="section-header" style={{ margin: 0, flex: 1 }}>
               <span className="section-title">{t('bird.detections')}</span>
-            </div>
-            <div className="tabs" role="tablist">
-              {tabs.map(({ key, label }) => (
-                <button
-                  key={key}
-                  id={`bird-tab-${key}`}
-                  role="tab"
-                  aria-selected={tab === key}
-                  className={`tab-btn ${tab === key ? 'active' : ''}`}
-                  onClick={() => setTab(key)}
-                >
-                  {label}
-                </button>
-              ))}
             </div>
           </div>
 

@@ -2,13 +2,13 @@
 
 import { useRouter } from 'next/navigation'
 import type { Bird, Detection } from '@/lib/database.types'
-import ConfidenceBar from './ConfidenceBar'
+
 import { useI18n } from '@/lib/i18n'
 
 interface BirdWithSummary extends Bird {
   detectionCount: number
-  lastSeen: string | null
   maxConfidence: number | null
+  hourlyCounts: number[]
 }
 
 export default function BirdCard({ bird }: { bird: BirdWithSummary }) {
@@ -24,12 +24,13 @@ export default function BirdCard({ bird }: { bird: BirdWithSummary }) {
 
   const displayName = commonName ?? bird.scientific_name
 
-  const lastSeenTime = bird.lastSeen
-    ? new Date(`1970-01-01T${bird.lastSeen}`).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null
+  const confColorClass = bird.maxConfidence !== null
+    ? bird.maxConfidence > 80 ? 'conf-high'
+    : bird.maxConfidence > 50 ? 'conf-med'
+    : 'conf-low'
+    : ''
+
+  const maxCount = Math.max(...(bird.hourlyCounts || []), 1)
 
   return (
     <article
@@ -50,23 +51,38 @@ export default function BirdCard({ bird }: { bird: BirdWithSummary }) {
         <div className="bird-card-badge">
           {bird.detectionCount} ×
         </div>
+        {bird.maxConfidence !== null && (
+          <div className={`bird-card-badge-bottom ${confColorClass}`}>
+            {Math.round(bird.maxConfidence * 100)}%
+          </div>
+        )}
       </div>
 
       <div className="bird-card-body">
         <div className="bird-card-name">{displayName}</div>
         <div className="bird-card-sci">{bird.scientific_name}</div>
 
-        <div className="bird-card-meta">
-          <div className="bird-card-count">
-            <span className="dot" />
-            {lastSeenTime
-              ? `${t('bird.last_seen')}: ${lastSeenTime}`
-              : `${bird.detectionCount} ${t('bird.detections')}`}
+        <div className="bird-histogram-container">
+          <div className="bird-histogram">
+            {bird.hourlyCounts?.map((count, i) => {
+              const heightPct = (count / maxCount) * 100
+              return (
+                <div 
+                  key={i} 
+                  className={`bird-histogram-bar ${count > 0 ? 'has-data' : ''}`}
+                  style={{ height: count > 0 ? `${Math.max(heightPct, 15)}%` : '2px' }}
+                  title={`${i}:00 - ${count} detections`}
+                />
+              )
+            })}
           </div>
-        </div>
-
-        <div style={{ marginTop: '0.75rem' }}>
-          <ConfidenceBar value={bird.maxConfidence} />
+          <div className="bird-histogram-labels">
+            <span>0</span>
+            <span>6</span>
+            <span>12</span>
+            <span>18</span>
+            <span>24</span>
+          </div>
         </div>
       </div>
     </article>

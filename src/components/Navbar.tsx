@@ -109,90 +109,90 @@ export default function Navbar({
       <div className="container">
         <div className="navbar-inner">
           <Link href="/" className="navbar-logo">
-            <span className="logo-icon">🦅</span>
-            <span>VogelStation</span>
+            <img src="/logo.svg" alt="BirdWeb Logo" className="logo-icon" style={{ width: '1.8rem', height: '1.8rem' }} />
+            <span>GHVogelStation</span>
           </Link>
 
           {/* ── Time filter tabs ── */}
           {selectedTab && onTabChange && onCustomRangeChange && (
             <div className="navbar-tabs" role="tablist" aria-label="Time filter">
-            {quickTabs.map(({ key, label }) => (
-              <button
-                key={key}
-                id={`nav-tab-${key}`}
-                role="tab"
-                aria-selected={selectedTab === key}
-                className={`nav-tab-btn ${selectedTab === key ? 'active' : ''}`}
-                onClick={() => {
-                  onTabChange?.(key)
-                  onCustomRangeChange?.(null)
-                  setPickerOpen(false)
-                }}
-              >
-                {label}
-              </button>
-            ))}
+              {quickTabs.map(({ key, label }) => (
+                <button
+                  key={key}
+                  id={`nav-tab-${key}`}
+                  role="tab"
+                  aria-selected={selectedTab === key}
+                  className={`nav-tab-btn ${selectedTab === key ? 'active' : ''}`}
+                  onClick={() => {
+                    onTabChange?.(key)
+                    onCustomRangeChange?.(null)
+                    setPickerOpen(false)
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
 
-            {/* Custom picker trigger */}
-            <div className="nav-picker-wrap" ref={pickerRef}>
-              <button
-                id="nav-tab-custom"
-                role="tab"
-                aria-selected={selectedTab === 'custom'}
-                aria-expanded={pickerOpen}
-                className={`nav-tab-btn nav-tab-custom ${selectedTab === 'custom' ? 'active' : ''}`}
-                onClick={() => (pickerOpen ? setPickerOpen(false) : openPicker())}
-              >
-                {selectedTab === 'custom' ? customLabel : t('tab.custom')}
-                <span className="nav-tab-chevron">{pickerOpen ? '▲' : '▼'}</span>
-              </button>
+              {/* Custom picker trigger */}
+              <div className="nav-picker-wrap" ref={pickerRef}>
+                <button
+                  id="nav-tab-custom"
+                  role="tab"
+                  aria-selected={selectedTab === 'custom'}
+                  aria-expanded={pickerOpen}
+                  className={`nav-tab-btn nav-tab-custom ${selectedTab === 'custom' ? 'active' : ''}`}
+                  onClick={() => (pickerOpen ? setPickerOpen(false) : openPicker())}
+                >
+                  {selectedTab === 'custom' ? customLabel : t('tab.custom')}
+                  <span className="nav-tab-chevron">{pickerOpen ? '▲' : '▼'}</span>
+                </button>
 
-              {pickerOpen && (
-                <div className="nav-picker-dropdown" role="dialog" aria-label="Custom date picker">
-                  {/* Mode selector */}
-                  <div className="picker-mode-row">
-                    {(['day', 'week', 'month'] as const).map((m) => (
-                      <button
-                        key={m}
-                        className={`picker-mode-btn ${pickerMode === m ? 'active' : ''}`}
-                        onClick={() => {
-                          setPickerMode(m)
-                          // reset value on mode switch
-                          const today = new Date()
-                          const pad = (n: number) => String(n).padStart(2, '0')
-                          if (m === 'day')
-                            setPickerValue(
-                              `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
-                            )
-                          else if (m === 'week') setPickerValue(isoWeek(today))
-                          else
-                            setPickerValue(
-                              `${today.getFullYear()}-${pad(today.getMonth() + 1)}`
-                            )
-                        }}
-                      >
-                        {t(`picker.${m}`)}
-                      </button>
-                    ))}
+                {pickerOpen && (
+                  <div className="nav-picker-dropdown" role="dialog" aria-label="Custom date picker">
+                    {/* Mode selector */}
+                    <div className="picker-mode-row">
+                      {(['day', 'week', 'month'] as const).map((m) => (
+                        <button
+                          key={m}
+                          className={`picker-mode-btn ${pickerMode === m ? 'active' : ''}`}
+                          onClick={() => {
+                            setPickerMode(m)
+                            // reset value on mode switch
+                            const today = new Date()
+                            const pad = (n: number) => String(n).padStart(2, '0')
+                            if (m === 'day')
+                              setPickerValue(
+                                `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+                              )
+                            else if (m === 'week') setPickerValue(isoWeek(today))
+                            else
+                              setPickerValue(
+                                `${today.getFullYear()}-${pad(today.getMonth() + 1)}`
+                              )
+                          }}
+                        >
+                          {t(`picker.${m}`)}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Native date/week/month input */}
+                    <input
+                      id="custom-date-input"
+                      type={pickerMode === 'day' ? 'date' : pickerMode === 'week' ? 'week' : 'month'}
+                      value={pickerValue}
+                      onChange={(e) => setPickerValue(e.target.value)}
+                      className="picker-input"
+                      max={todayIso()}
+                    />
+
+                    <button className="picker-apply-btn" onClick={applyCustom}>
+                      {t('picker.apply')}
+                    </button>
                   </div>
-
-                  {/* Native date/week/month input */}
-                  <input
-                    id="custom-date-input"
-                    type={pickerMode === 'day' ? 'date' : pickerMode === 'week' ? 'week' : 'month'}
-                    value={pickerValue}
-                    onChange={(e) => setPickerValue(e.target.value)}
-                    className="picker-input"
-                    max={todayIso()}
-                  />
-
-                  <button className="picker-apply-btn" onClick={applyCustom}>
-                    {t('picker.apply')}
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
           )}
 
           <div className="navbar-controls">

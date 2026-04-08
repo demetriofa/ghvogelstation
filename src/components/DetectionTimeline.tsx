@@ -49,10 +49,12 @@ export default function DetectionTimeline({ detections, showBirdName = false }: 
         const rows = grouped[date].sort((a, b) => b.time.localeCompare(a.time))
         return (
           <section key={date} className="detection-section" id={`date-${date}`}>
-            <div className="detection-section-header">
-              <span className="detection-date-label">{formatDate(date, lang)}</span>
-              <span className="detection-day-count">{rows.length} ×</span>
-            </div>
+            {sortedDates.length > 1 && (
+              <div className="detection-section-header">
+                <span className="detection-date-label">{formatDate(date, lang)}</span>
+                <span className="detection-day-count">{rows.length} ×</span>
+              </div>
+            )}
 
             {rows.map((d) => {
               const birdName =
@@ -78,9 +80,6 @@ export default function DetectionTimeline({ detections, showBirdName = false }: 
                       >
                         {displayName}
                       </Link>
-                    )}
-                    {!showBirdName && (
-                      <span className="detection-bird-name">{timeStr}</span>
                     )}
 
                     <div className="detection-meta">

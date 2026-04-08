@@ -9,8 +9,8 @@ import BirdCard from '@/components/BirdCard'
 
 interface BirdSummary extends Bird {
   detectionCount: number
-  lastSeen: string | null
   maxConfidence: number | null
+  hourlyCounts: number[]
 }
 
 function getDateRange(
@@ -196,16 +196,17 @@ export default function HomePage() {
         const id = bird.id
 
         if (!birdMap.has(id)) {
-          birdMap.set(id, { ...bird, detectionCount: 0, lastSeen: null, maxConfidence: null })
+          birdMap.set(id, { ...bird, detectionCount: 0, maxConfidence: null, hourlyCounts: new Array(24).fill(0) })
         }
         const summary = birdMap.get(id)!
         summary.detectionCount++
-        if (!summary.lastSeen || d.time > summary.lastSeen) summary.lastSeen = d.time
+        
         if (d.confidence != null && (summary.maxConfidence == null || d.confidence > summary.maxConfidence)) {
           summary.maxConfidence = d.confidence
         }
 
         const hour = parseInt(d.time.split(':')[0])
+        summary.hourlyCounts[hour]++
         hourCounts[hour] = (hourCounts[hour] ?? 0) + 1
 
         if (d.confidence != null) {
