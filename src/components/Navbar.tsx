@@ -16,7 +16,6 @@ export interface CustomRange {
 interface NavbarProps {
   selectedLocation: number | null
   onLocationChange: (id: number | null) => void
-  onUploadClick: () => void
   selectedTab?: Tab
   onTabChange?: (tab: Tab) => void
   customRange?: CustomRange | null
@@ -26,7 +25,6 @@ interface NavbarProps {
 export default function Navbar({
   selectedLocation,
   onLocationChange,
-  onUploadClick,
   selectedTab,
   onTabChange,
   customRange,
@@ -229,17 +227,6 @@ export default function Navbar({
                 </button>
               ))}
             </div>
-
-            {/* Upload button */}
-            <button
-              id="upload-audio-btn"
-              className="upload-btn"
-              onClick={onUploadClick}
-              aria-label={t('upload.title')}
-            >
-              <span>↑</span>
-              <span>{t('upload.title')}</span>
-            </button>
           </div>
         </div>
       </div>

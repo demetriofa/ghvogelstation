@@ -7,7 +7,6 @@ import { useI18n } from '@/lib/i18n'
 import Link from 'next/link'
 import DetectionTimeline from '@/components/DetectionTimeline'
 import Navbar from '@/components/Navbar'
-import UploadModal from '@/components/UploadModal'
 import ConfidenceBar from '@/components/ConfidenceBar'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -27,7 +26,6 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('all')
   const [selectedLocation, setSelectedLocation] = useState<number | null>(null)
-  const [showUpload, setShowUpload] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [isZoomed, setIsZoomed] = useState(false)
 
@@ -155,7 +153,6 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
       <Navbar
         selectedLocation={selectedLocation}
         onLocationChange={setSelectedLocation}
-        onUploadClick={() => setShowUpload(true)}
       />
 
       <main className="main-content">
@@ -311,18 +308,6 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
           )}
         </div>
       </main>
-
-      {showUpload && (
-        <UploadModal
-          preselectedBirdId={birdId}
-          onClose={() => setShowUpload(false)}
-          onSuccess={() => {
-            setShowUpload(false)
-            showToast(t('upload.success'))
-            fetchDetections()
-          }}
-        />
-      )}
 
       {toast && (
         <div className="toast success" role="alert">{toast}</div>

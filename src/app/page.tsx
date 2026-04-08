@@ -6,7 +6,6 @@ import type { DetectionWithBird, Bird } from '@/lib/database.types'
 import { useI18n } from '@/lib/i18n'
 import Navbar, { type Tab, type CustomRange, formatCustomLabel } from '@/components/Navbar'
 import BirdCard from '@/components/BirdCard'
-import UploadModal from '@/components/UploadModal'
 
 interface BirdSummary extends Bird {
   detectionCount: number
@@ -85,7 +84,6 @@ export default function HomePage() {
   const [birds, setBirds] = useState<BirdSummary[]>([])
   const [stats, setStats] = useState({ total: 0, species: 0, peakHour: '—', avgConf: 0 })
   const [loading, setLoading] = useState(true)
-  const [showUpload, setShowUpload] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -249,7 +247,6 @@ export default function HomePage() {
       <Navbar
         selectedLocation={selectedLocation}
         onLocationChange={setSelectedLocation}
-        onUploadClick={() => setShowUpload(true)}
         selectedTab={tab}
         onTabChange={setTab}
         customRange={customRange}
@@ -333,17 +330,6 @@ export default function HomePage() {
           )}
         </div>
       </main>
-
-      {showUpload && (
-        <UploadModal
-          onClose={() => setShowUpload(false)}
-          onSuccess={() => {
-            setShowUpload(false)
-            showToast(t('upload.success'))
-            fetchData()
-          }}
-        />
-      )}
 
       {toast && (
         <div className={`toast ${toast.type}`} role="alert">
