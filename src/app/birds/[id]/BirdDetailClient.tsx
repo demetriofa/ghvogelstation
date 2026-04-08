@@ -315,7 +315,7 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
               <p>{t('common.loading')}</p>
             </div>
           ) : (
-            <DetectionTimeline detections={detections} showBirdName={false} />
+            <DetectionTimeline detections={detections} showBirdName={false} groupBy5Min={true} />
           )}
         </div>
       </main>
