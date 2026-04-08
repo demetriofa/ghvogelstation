@@ -29,6 +29,7 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
   const [selectedLocation, setSelectedLocation] = useState<number | null>(null)
   const [showUpload, setShowUpload] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [isZoomed, setIsZoomed] = useState(false)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -168,7 +169,12 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
           <div className="bird-hero">
             <div className="bird-hero-image">
               {bird?.image_url ? (
-                <img src={`/fotos_pajaros/${bird.image_url}`} alt={displayName} />
+                <img 
+                  src={`/fotos_pajaros/${bird.image_url}`} 
+                  alt={displayName} 
+                  style={{ cursor: 'zoom-in' }}
+                  onClick={() => setIsZoomed(true)}
+                />
               ) : (
                 <div className="bird-hero-placeholder">🐦</div>
               )}
@@ -320,6 +326,35 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
 
       {toast && (
         <div className="toast success" role="alert">{toast}</div>
+      )}
+
+      {isZoomed && bird?.image_url && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out',
+            backdropFilter: 'blur(4px)'
+          }}
+          onClick={() => setIsZoomed(false)}
+        >
+          <img 
+            src={`/fotos_pajaros/${bird.image_url}`} 
+            alt={displayName} 
+            style={{ 
+              maxWidth: '90vw', 
+              maxHeight: '90vh', 
+              objectFit: 'contain', 
+              borderRadius: '8px', 
+              boxShadow: '0 4px 24px rgba(0,0,0,0.5)' 
+            }} 
+          />
+        </div>
       )}
     </div>
   )
