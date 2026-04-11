@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 import type { Bird, Detection } from '@/lib/database.types'
@@ -13,9 +13,44 @@ interface BirdWithSummary extends Bird {
   hourlyCounts: number[]
 }
 
-export default function BirdCard({ bird }: { bird: BirdWithSummary }) {
+interface BirdCardProps {
+  bird: BirdWithSummary
+  showPlayButton?: boolean
+}
+
+export default function BirdCard({ bird, showPlayButton }: BirdCardProps) {
   const router = useRouter()
   const { lang, t } = useI18n()
+  const [isPlaying, setIsPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+      }
+    }
+  }, [])
+
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!audioRef.current) {
+      if (!bird.scientific_name) return
+      audioRef.current = new Audio(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ghvogelstationfiles/today/${bird.scientific_name.replace(/ /g, '_')}.mp3`)
+      audioRef.current.onended = () => setIsPlaying(false)
+    }
+
+    if (isPlaying) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+    } else {
+      audioRef.current.play().catch(e => {
+        console.error("Audio playback failed", e)
+        setIsPlaying(false)
+      })
+      setIsPlaying(true)
+    }
+  }
 
   const commonName =
     lang === 'de'
@@ -47,7 +82,6 @@ export default function BirdCard({ bird }: { bird: BirdWithSummary }) {
       id={`bird-card-${bird.id}`}
     >
       <div className="bird-card-image">
-        {/* Placeholder logo shown while loading or if no image */}
         {(!bird.image_url || !imageLoaded) && (
           <div className="bird-card-image-placeholder">
             <img src="/logo.svg" alt="placeholder" className="placeholder-logo" />
@@ -74,7 +108,41 @@ export default function BirdCard({ bird }: { bird: BirdWithSummary }) {
       </div>
 
       <div className="bird-card-body">
-        <div className="bird-card-name">{displayName}</div>
+        <div className="bird-card-name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+          {showPlayButton && (
+            <button 
+              onClick={handlePlayClick} 
+              className="play-triangle-btn"
+              style={{ 
+                background: 'var(--accent-green)', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '50%', 
+                width: '28px', 
+                height: '28px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                boxShadow: '0 0 10px rgba(34, 197, 94, 0.4)',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+              }}
+              title={isPlaying ? "Pause" : "Play"}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)'
+                e.currentTarget.style.boxShadow = '0 0 15px rgba(34, 197, 94, 0.6)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.4)'
+              }}
+            >
+              {isPlaying ? '⏸' : '▶'}
+            </button>
+          )}
+        </div>
         <div className="bird-card-sci">{bird.scientific_name}</div>
 
         <div className="bird-histogram-container">

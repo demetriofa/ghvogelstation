@@ -325,7 +325,7 @@ export default function HomePage() {
           ) : (
             <div className="bird-grid">
               {birds.map((bird) => (
-                <BirdCard key={bird.id} bird={bird} />
+                <BirdCard key={bird.id} bird={bird} showPlayButton={tab === 'today'} />
               ))}
             </div>
           )}
