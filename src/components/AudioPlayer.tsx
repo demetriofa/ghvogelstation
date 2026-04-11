@@ -1,133 +1,95 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
+import WaveSurfer from 'wavesurfer.js'
 
 interface AudioPlayerProps {
   url: string
 }
 
 export default function AudioPlayer({ url }: AudioPlayerProps) {
-  const audioRef = useRef<HTMLAudioElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [duration, setDuration] = useState<number | null>(null)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [progress, setProgress] = useState(0)
+  const [duration, setDuration] = useState<number>(0)
+  const [currentTime, setCurrentTime] = useState<number>(0)
+  const [isReady, setIsReady] = useState(false)
+  const wavesurfer = useRef<WaveSurfer | null>(null)
 
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
+    if (!containerRef.current) return
 
-    const onLoadedMetadata = () => setDuration(audio.duration)
-    const onTimeUpdate = () => {
-      setCurrentTime(audio.currentTime)
-      setProgress(audio.duration ? (audio.currentTime / audio.duration) * 100 : 0)
-    }
-    const onEnded = () => {
+    wavesurfer.current = WaveSurfer.create({
+      container: containerRef.current,
+      waveColor: 'rgba(255, 255, 255, 0.4)',
+      progressColor: 'rgba(34, 197, 94, 0.8)',
+      cursorColor: 'rgba(34, 197, 94, 1)',
+      height: 28,
+      barWidth: 2,
+      barGap: 2,
+      barRadius: 2,
+      normalize: true,
+      url: url,
+    })
+
+    const ws = wavesurfer.current
+
+    ws.on('ready', () => {
+      setDuration(ws.getDuration())
+      setIsReady(true)
+    })
+    
+    ws.on('audioprocess', (time) => {
+      setCurrentTime(time)
+    })
+    
+    ws.on('timeupdate', (time) => {
+      setCurrentTime(time)
+    })
+
+    ws.on('play', () => setIsPlaying(true))
+    ws.on('pause', () => setIsPlaying(false))
+    ws.on('finish', () => {
       setIsPlaying(false)
-      setCurrentTime(0)
-      setProgress(0)
-    }
-
-    audio.addEventListener('loadedmetadata', onLoadedMetadata)
-    audio.addEventListener('timeupdate', onTimeUpdate)
-    audio.addEventListener('ended', onEnded)
+      ws.seekTo(0)
+    })
 
     return () => {
-      audio.removeEventListener('loadedmetadata', onLoadedMetadata)
-      audio.removeEventListener('timeupdate', onTimeUpdate)
-      audio.removeEventListener('ended', onEnded)
+      ws.destroy()
     }
-  }, [])
+  }, [url])
 
   const togglePlay = () => {
-    const audio = audioRef.current
-    if (!audio) return
-    if (isPlaying) {
-      audio.pause()
-      setIsPlaying(false)
-    } else {
-      audio.play()
-      setIsPlaying(true)
-    }
+    wavesurfer.current?.playPause()
   }
 
   const formatTime = (secs: number) => {
+    if (isNaN(secs)) return '0:00'
     const m = Math.floor(secs / 60)
     const s = Math.floor(secs % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const audio = audioRef.current
-    if (!audio || !duration) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const pct = x / rect.width
-    audio.currentTime = pct * duration
-  }
-
   return (
     <div className="audio-player">
-      <audio ref={audioRef} src={url} preload="metadata" />
       <button
         className="audio-play-btn"
         onClick={togglePlay}
+        disabled={!isReady}
         aria-label={isPlaying ? 'Pause' : 'Play'}
+        style={{ opacity: isReady ? 1 : 0.5 }}
       >
         {isPlaying ? '⏸' : '▶'}
       </button>
 
       <div
         className="audio-waveform-placeholder"
-        onClick={handleTrackClick}
-        style={{ cursor: 'pointer', position: 'relative' }}
-        title="Click to seek"
+        style={{ cursor: isReady ? 'pointer' : 'default', background: 'transparent' }}
       >
-        {/* progress overlay */}
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            height: '100%',
-            width: `${progress}%`,
-            background: 'rgba(34, 197, 94, 0.45)',
-            borderRadius: '4px',
-            transition: 'width 0.1s linear',
-          }}
-        />
-        {/* waveform bars decoration */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2px',
-          padding: '4px 6px',
-          overflow: 'hidden',
-        }}>
-          {Array.from({ length: 48 }).map((_, i) => {
-            const h = 20 + Math.sin(i * 0.7) * 15 + Math.cos(i * 1.3) * 10
-            return (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  height: `${Math.max(10, Math.min(90, h))}%`,
-                  background: i / 48 < progress / 100
-                    ? 'rgba(34, 197, 94, 0.8)'
-                    : 'rgba(255, 255, 255, 0.15)',
-                  borderRadius: '1px',
-                  minWidth: '2px',
-                }}
-              />
-            )
-          })}
-        </div>
+        <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       </div>
 
       <span className="audio-duration">
-        {duration ? `${formatTime(currentTime)} / ${formatTime(duration)}` : '—:——'}
+        {isReady ? `${formatTime(currentTime)} / ${formatTime(duration)}` : '—:——'}
       </span>
     </div>
   )

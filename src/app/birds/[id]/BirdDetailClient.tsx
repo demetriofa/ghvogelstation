@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n'
 import Link from 'next/link'
 import DetectionTimeline from '@/components/DetectionTimeline'
 import Navbar, { type Tab, type CustomRange } from '@/components/Navbar'
+import AudioPlayer from '@/components/AudioPlayer'
 
 function isoWeekToDates(isoWeek: string): { from: string; to: string } {
   const [yearStr, weekStr] = isoWeek.split('-W')
@@ -276,6 +277,17 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
                 >
                   🌐 {t('bird.wikipedia')}
                 </a>
+              )}
+
+              {bird?.scientific_name && (
+                <div className="audio-player-container" style={{ marginTop: '1.5rem' }}>
+                  <p style={{ fontSize: '0.85rem', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    {t('bird.best_audio')}
+                  </p>
+                  <AudioPlayer 
+                    url={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ghvogelstationfiles/best/${bird.scientific_name.replace(/ /g, '_')}.mp3`} 
+                  />
+                </div>
               )}
             </div>
           </div>
