@@ -23,15 +23,11 @@ export default function BirdCard({ bird, showPlayButton }: BirdCardProps) {
   const { lang, t } = useI18n()
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const audioCtxRef = useRef<AudioContext | null>(null)
   
   useEffect(() => {
     return () => {
       if (audioRef.current) {
         audioRef.current.pause()
-      }
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close()
       }
     }
   }, [])
@@ -40,38 +36,14 @@ export default function BirdCard({ bird, showPlayButton }: BirdCardProps) {
     e.stopPropagation()
     if (!audioRef.current) {
       if (!bird.scientific_name) return
-      
-      const audioUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ghvogelstationfiles/today/${bird.scientific_name.replace(/ /g, '_')}.mp3`
-      const audio = new Audio(audioUrl)
-      audio.crossOrigin = 'anonymous'
-      audioRef.current = audio
-      
+      audioRef.current = new Audio(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ghvogelstationfiles/today/${bird.scientific_name.replace(/ /g, '_')}.mp3`)
       audioRef.current.onended = () => setIsPlaying(false)
-      
-      // Setup AudioContext and gain node for volume boost
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-      if (AudioContextClass) {
-        try {
-          audioCtxRef.current = new AudioContextClass()
-          const source = audioCtxRef.current.createMediaElementSource(audio)
-          const gainNode = audioCtxRef.current.createGain()
-          gainNode.gain.value = 5.0 // Increase volume by 5x
-          source.connect(gainNode)
-          gainNode.connect(audioCtxRef.current.destination)
-        } catch (e) {
-          console.error("Audio volume boost failed:", e)
-        }
-      }
     }
 
     if (isPlaying) {
       audioRef.current.pause()
       setIsPlaying(false)
     } else {
-      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume()
-      }
-      
       audioRef.current.play().catch(e => {
         console.error("Audio playback failed", e)
         setIsPlaying(false)
