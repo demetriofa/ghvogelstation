@@ -210,7 +210,7 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
 
               {bird?.image_url && (
                 <img 
-                  src={`/fotos_pajaros/${bird.image_url}`} 
+                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ghvogelstationfiles/pics/${bird.image_url}`} 
                   alt={displayName} 
                   style={{ cursor: 'zoom-in', opacity: imageLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
                   onClick={() => setIsZoomed(true)}
@@ -361,7 +361,7 @@ export default function BirdDetailClient({ birdId }: BirdDetailClientProps) {
           onClick={() => setIsZoomed(false)}
         >
           <img 
-            src={`/fotos_pajaros/${bird.image_url}`} 
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ghvogelstationfiles/pics/${bird.image_url}`} 
             alt={displayName} 
             style={{ 
               maxWidth: '90vw', 

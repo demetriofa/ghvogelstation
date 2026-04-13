@@ -118,7 +118,7 @@ export default function BirdCard({ bird, showPlayButton }: BirdCardProps) {
         
         {bird.image_url && (
           <img 
-            src={`/fotos_pajaros/${bird.image_url}`} 
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ghvogelstationfiles/pics/${bird.image_url}`} 
             alt={displayName} 
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
